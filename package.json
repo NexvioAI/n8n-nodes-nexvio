@@ -1,0 +1,47 @@
+{
+  "name": "n8n-nodes-nexvio",
+  "version": "0.1.0",
+  "description": "n8n community node for Nexvio AI agents, conversations, contacts, and tickets",
+  "keywords": [
+    "n8n-community-node-package",
+    "nexvio",
+    "ai",
+    "customer-support"
+  ],
+  "license": "MIT",
+  "homepage": "https://nexvio.ai",
+  "author": { "name": "Nexvio", "email": "support@nexvio.ai" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NexvioAI/n8n-nodes-nexvio.git"
+  },
+  "main": "index.js",
+  "engines": { "node": ">=22.22" },
+  "scripts": {
+    "build": "n8n-node build",
+    "predev": "n8n-node build",
+    "dev": "node scripts/dev.mjs",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix"
+  },
+  "files": ["dist"],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/NexvioApi.credentials.js",
+      "dist/credentials/NexvioOAuth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Nexvio/Nexvio.node.js",
+      "dist/nodes/NexvioTrigger/NexvioTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "^0.23.0",
+    "eslint": "9.29.0",
+    "n8n-workflow": "^1.82.0",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": { "n8n-workflow": "*" }
+}
