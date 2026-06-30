@@ -5,6 +5,7 @@ import {
   nexvioOAuthDashboardUrlField,
   nexvioOAuthTokenUrlField,
 } from "../shared/credential-fields"
+import { NEXVIO_OAUTH_CLIENT_ID } from "../shared/oauth-config"
 import { nexvioCredentialIcon } from "../shared/nexvio-icon"
 
 export class NexvioOAuth2Api implements ICredentialType {
@@ -30,10 +31,8 @@ export class NexvioOAuth2Api implements ICredentialType {
     {
       displayName: "Client ID",
       name: "clientId",
-      type: "string",
-      default: "",
-      required: true,
-      description: "OAuth client ID from your Nexvio dashboard (`N8N_CLIENT_ID` in dashboard `.env`)",
+      type: "hidden",
+      default: NEXVIO_OAUTH_CLIENT_ID,
     },
     {
       displayName: "Client Secret",

@@ -52,7 +52,10 @@ function ensureSupportedNode() {
 
 ensureSupportedNode()
 
-const clientId = process.env.NEXVIO_OAUTH_CLIENT_ID?.trim()
+const configPath = join(rootDir, "shared/oauth-config.ts")
+const configSource = readFileSync(configPath, "utf8")
+const clientIdFromConfig = configSource.match(/NEXVIO_OAUTH_CLIENT_ID = "([^"]+)"/)?.[1]
+const clientId = process.env.NEXVIO_OAUTH_CLIENT_ID?.trim() || clientIdFromConfig
 
 const env = {
   ...process.env,
@@ -66,9 +69,6 @@ if (clientId) {
       clientId,
     },
   })
-  console.log("Using NEXVIO_OAUTH_CLIENT_ID from environment for local OAuth dev")
-} else {
-  console.log("Set NEXVIO_OAUTH_CLIENT_ID to prefill OAuth Client ID during local dev")
 }
 
 console.log(`Starting n8n with Nexvio PKCE OAuth (Node ${process.version})`)

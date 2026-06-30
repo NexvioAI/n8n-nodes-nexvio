@@ -24,8 +24,8 @@ Requires Node **≥ 22.22** (see `.nvmrc`).
 ### Nexvio OAuth2 API (recommended)
 
 - **Dashboard URL** — default `https://app.nexvio.ai` (change for self-hosted dashboard)
-- **Client ID** — same value as `N8N_CLIENT_ID` in your Nexvio dashboard `.env`
-- PKCE is used; no client secret in the node
+- **Client ID** — built into the node; must match `N8N_CLIENT_ID` on the Nexvio dashboard
+- PKCE is used; no client secret in the node (set `N8N_CLIENT_SECRET` on the dashboard if needed)
 
 ### Nexvio API (API key)
 
