@@ -7,21 +7,24 @@ import type {
   IWebhookResponseData,
   INodeType,
   INodeTypeDescription,
+  JsonObject,
 } from "n8n-workflow"
-import { NodeConnectionTypes, NodeOperationError } from "n8n-workflow"
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from "n8n-workflow"
+import { nexvioApiRequest } from "../../shared/nexvio-errors"
+import { fetchNexvioForms } from "../../shared/nexvio-forms-api"
 import { formatNexvioRequestError } from "../../shared/nexvio-url"
 import { nexvioIcon } from "../../shared/nexvio-icon"
-import { nexvioHttpRequest } from "../../shared/nexvio-request"
 
 type HookCreateResponse = {
   id: string
 }
 
-type NexvioFormsResponse = {
-  forms: Array<{
+type NexvioHooksResponse = {
+  hooks: Array<{
     id: string
-    name: string
-    is_enabled?: boolean
+    url: string
+    event: string
+    formId?: string | null
   }>
 }
 
@@ -32,6 +35,7 @@ export class NexvioTrigger implements INodeType {
     icon: nexvioIcon,
     group: ["trigger"],
     version: 1,
+    subtitle: '={{$parameter["event"]}}',
     description: "Starts the workflow when a new contact, ticket, or form event occurs in Nexvio",
     defaults: {
       name: "Nexvio Trigger",
@@ -85,7 +89,7 @@ export class NexvioTrigger implements INodeType {
         default: "oAuth2",
       },
       {
-        displayName: "Event",
+        displayName: "Trigger On",
         name: "event",
         type: "options",
         options: [
@@ -137,16 +141,7 @@ export class NexvioTrigger implements INodeType {
     loadOptions: {
       async getForms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         try {
-          const response = (await nexvioHttpRequest(this, {
-            method: "GET",
-            url: "/api/n8n/forms",
-          })) as NexvioFormsResponse | { error?: string }
-
-          if (response && typeof response === "object" && "error" in response && response.error) {
-            throw new NodeOperationError(this.getNode(), response.error)
-          }
-
-          const forms = (response as NexvioFormsResponse).forms ?? []
+          const forms = await fetchNexvioForms(this)
 
           return forms
             .filter((form) => form.is_enabled !== false)
@@ -164,10 +159,35 @@ export class NexvioTrigger implements INodeType {
   webhookMethods = {
     default: {
       async checkExists(this: IHookFunctions): Promise<boolean> {
+        const webhookUrl = this.getNodeWebhookUrl("default")
+        const event = this.getNodeParameter("event") as string
+        const formId = (this.getNodeParameter("formId", "") as string)?.trim()
+
+        const response = (await nexvioApiRequest(this, {
+          method: "GET",
+          url: "/api/n8n/hooks",
+        })) as NexvioHooksResponse
+
+        const match = (response.hooks ?? []).find((hook) => {
+          if (hook.url !== webhookUrl || hook.event !== event) {
+            return false
+          }
+          if (event === "forms.submission.created" && formId) {
+            return hook.formId === formId
+          }
+          return true
+        })
+
+        if (!match) {
+          return false
+        }
+
         const webhookData = this.getWorkflowStaticData("node")
-        return webhookData.webhookId !== undefined
+        webhookData.webhookId = match.id
+        return true
       },
       async create(this: IHookFunctions): Promise<boolean> {
+        const webhookData = this.getWorkflowStaticData("node")
         const webhookUrl = this.getNodeWebhookUrl("default")
         const event = this.getNodeParameter("event") as string
         const formId = this.getNodeParameter("formId", "") as string
@@ -184,30 +204,48 @@ export class NexvioTrigger implements INodeType {
           body.formId = formId.trim()
         }
 
-        const response = (await nexvioHttpRequest(this, {
-          method: "POST",
-          url: "/api/n8n/hooks",
-          body,
-        })) as HookCreateResponse
+        try {
+          const response = (await nexvioApiRequest(this, {
+            method: "POST",
+            url: "/api/n8n/hooks",
+            body,
+          })) as HookCreateResponse
 
-        const webhookData = this.getWorkflowStaticData("node")
-        webhookData.webhookId = response.id
-        return true
+          webhookData.webhookId = response.id
+          return true
+        } catch (error) {
+          delete webhookData.webhookId
+          throw error
+        }
       },
       async delete(this: IHookFunctions): Promise<boolean> {
         const webhookData = this.getWorkflowStaticData("node") as {
           webhookId?: string
         }
 
-        if (webhookData.webhookId) {
-          await nexvioHttpRequest(this, {
+        if (!webhookData.webhookId) {
+          return true
+        }
+
+        try {
+          await nexvioApiRequest(this, {
             method: "DELETE",
             url: `/api/n8n/hooks/${webhookData.webhookId}`,
           })
+        } catch (error) {
+          const statusCode =
+            error && typeof error === "object" && "httpCode" in error
+              ? Number((error as { httpCode?: string | number }).httpCode)
+              : undefined
 
-          delete webhookData.webhookId
+          if (statusCode !== 404) {
+            throw new NodeApiError(this.getNode(), error as JsonObject, {
+              message: formatNexvioRequestError(error),
+            })
+          }
         }
 
+        delete webhookData.webhookId
         return true
       },
     },
@@ -215,8 +253,31 @@ export class NexvioTrigger implements INodeType {
 
   async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
     const bodyData = this.getBodyData() as IDataObject
+    const headers = this.getHeaderData() as IDataObject
+    const headerEventId = headers["x-nexvio-event-id"]
+    const eventId =
+      typeof headerEventId === "string" && headerEventId.trim()
+        ? headerEventId
+        : typeof bodyData.eventId === "string"
+          ? bodyData.eventId
+          : undefined
+
     return {
-      workflowData: [this.helpers.returnJsonArray([bodyData])],
+      workflowData: [
+        this.helpers.returnJsonArray([
+          {
+            ...bodyData,
+            ...(eventId ? { eventId } : {}),
+            _webhookHeaders: {
+              "x-nexvio-signature": headers["x-nexvio-signature"],
+              "x-nexvio-timestamp": headers["x-nexvio-timestamp"],
+              "x-nexvio-event-id": headers["x-nexvio-event-id"],
+              "x-nexvio-event-type": headers["x-nexvio-event-type"],
+              "x-nexvio-delivery-attempt": headers["x-nexvio-delivery-attempt"],
+            },
+          },
+        ]),
+      ],
     }
   }
 }

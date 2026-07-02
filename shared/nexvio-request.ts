@@ -3,7 +3,7 @@ import { getNexvioRequestContext } from "./nexvio-url"
 
 type NexvioRequestContext = IExecuteFunctions | IHookFunctions | ILoadOptionsFunctions
 
-type NexvioRequestOptions = {
+export type NexvioRequestOptions = {
   method: "GET" | "POST" | "DELETE" | "PUT" | "PATCH"
   url: string
   body?: Record<string, unknown>

@@ -17,10 +17,11 @@ import {
   mapFormFieldToResourceMapper,
 } from "../../shared/form-fields"
 import { buildFormCreateFieldProperties, readFormFieldRows } from "../../shared/form-field-builder-properties"
+import { nexvioApiRequest } from "../../shared/nexvio-errors"
 import { formatNexvioRequestError } from "../../shared/nexvio-url"
 import { nexvioIcon } from "../../shared/nexvio-icon"
 import { fetchNexvioFormById, fetchNexvioForms } from "../../shared/nexvio-forms-api"
-import { nexvioHttpRequest } from "../../shared/nexvio-request"
+import { isValidEmail } from "../../shared/validation"
 
 type NexvioAgent = {
   id: string
@@ -46,7 +47,7 @@ export class Nexvio implements INodeType {
     displayName: "Nexvio",
     name: "nexvio",
     icon: nexvioIcon,
-    group: ["transform"],
+    group: ["output"],
     version: 1,
     subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
     description: "Send messages to Nexvio agents, manage contacts, tickets, and forms",
@@ -240,31 +241,34 @@ export class Nexvio implements INodeType {
         description: "The message to send to the agent",
       },
       {
-        displayName: "External Conversation ID",
-        name: "externalConversationId",
-        type: "string",
+        displayName: "Additional Fields",
+        name: "agentAdditionalFields",
+        type: "collection",
+        placeholder: "Add Field",
+        default: {},
         displayOptions: {
           show: {
             resource: ["agent"],
             operation: ["sendMessage"],
           },
         },
-        default: "",
-        description:
-          "Stable ID for the same chat across messages (e.g. telegram:123456789). Reuse this value to continue the conversation.",
-      },
-      {
-        displayName: "Session ID",
-        name: "sessionId",
-        type: "string",
-        displayOptions: {
-          show: {
-            resource: ["agent"],
-            operation: ["sendMessage"],
+        options: [
+          {
+            displayName: "External Conversation ID",
+            name: "externalConversationId",
+            type: "string",
+            default: "",
+            description:
+              "Stable ID for the same chat across messages (e.g. telegram:123456789). Reuse this value to continue the conversation.",
           },
-        },
-        default: "",
-        description: "Optional Nexvio session ID from a previous run",
+          {
+            displayName: "Session ID",
+            name: "sessionId",
+            type: "string",
+            default: "",
+            description: "Optional Nexvio session ID from a previous run",
+          },
+        ],
       },
       {
         displayName: "Start New Session",
@@ -294,86 +298,56 @@ export class Nexvio implements INodeType {
         default: "",
       },
       {
-        displayName: "First Name",
-        name: "firstName",
-        type: "string",
+        displayName: "Additional Fields",
+        name: "contactAdditionalFields",
+        type: "collection",
+        placeholder: "Add Field",
+        default: {},
         displayOptions: {
           show: {
             resource: ["contact"],
             operation: ["createOrUpdate"],
           },
         },
-        default: "",
-      },
-      {
-        displayName: "Last Name",
-        name: "lastName",
-        type: "string",
-        displayOptions: {
-          show: {
-            resource: ["contact"],
-            operation: ["createOrUpdate"],
+        options: [
+          {
+            displayName: "Company",
+            name: "companyName",
+            type: "string",
+            default: "",
           },
-        },
-        default: "",
-      },
-      {
-        displayName: "Phone",
-        name: "phone",
-        type: "string",
-        displayOptions: {
-          show: {
-            resource: ["contact"],
-            operation: ["createOrUpdate"],
+          {
+            displayName: "First Name",
+            name: "firstName",
+            type: "string",
+            default: "",
           },
-        },
-        default: "",
-      },
-      {
-        displayName: "Company",
-        name: "companyName",
-        type: "string",
-        displayOptions: {
-          show: {
-            resource: ["contact"],
-            operation: ["createOrUpdate"],
+          {
+            displayName: "Last Name",
+            name: "lastName",
+            type: "string",
+            default: "",
           },
-        },
-        default: "",
-      },
-      {
-        displayName: "Tags",
-        name: "tags",
-        type: "string",
-        displayOptions: {
-          show: {
-            resource: ["contact"],
-            operation: ["createOrUpdate"],
+          {
+            displayName: "Phone",
+            name: "phone",
+            type: "string",
+            default: "",
           },
-        },
-        default: "",
-        description: "Comma-separated tags",
+          {
+            displayName: "Tags",
+            name: "tags",
+            type: "string",
+            default: "",
+            description: "Comma-separated tags",
+          },
+        ],
       },
       {
         displayName: "Subject",
         name: "subject",
         type: "string",
         required: true,
-        displayOptions: {
-          show: {
-            resource: ["ticket"],
-            operation: ["create"],
-          },
-        },
-        default: "",
-      },
-      {
-        displayName: "Description",
-        name: "description",
-        type: "string",
-        typeOptions: {
-          rows: 4,
-        },
         displayOptions: {
           show: {
             resource: ["ticket"],
@@ -419,45 +393,51 @@ export class Nexvio implements INodeType {
         default: "medium",
       },
       {
-        displayName: "Requester Name",
-        name: "requesterName",
-        type: "string",
+        displayName: "Additional Fields",
+        name: "ticketAdditionalFields",
+        type: "collection",
+        placeholder: "Add Field",
+        default: {},
         displayOptions: {
           show: {
             resource: ["ticket"],
             operation: ["create"],
           },
         },
-        default: "",
-      },
-      {
-        displayName: "Requester Email",
-        name: "requesterEmail",
-        type: "string",
-        displayOptions: {
-          show: {
-            resource: ["ticket"],
-            operation: ["create"],
+        options: [
+          {
+            displayName: "Description",
+            name: "description",
+            type: "string",
+            typeOptions: {
+              rows: 4,
+            },
+            default: "",
           },
-        },
-        default: "",
-      },
-      {
-        displayName: "Agent Name or ID",
-        name: "ticketAgentId",
-        type: "options",
-        typeOptions: {
-          loadOptionsMethod: "getAgents",
-        },
-        displayOptions: {
-          show: {
-            resource: ["ticket"],
-            operation: ["create"],
+          {
+            displayName: "Requester Name",
+            name: "requesterName",
+            type: "string",
+            default: "",
           },
-        },
-        default: "",
-        description:
-          'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+          {
+            displayName: "Requester Email",
+            name: "requesterEmail",
+            type: "string",
+            default: "",
+          },
+          {
+            displayName: "Agent Name or ID",
+            name: "ticketAgentId",
+            type: "options",
+            typeOptions: {
+              loadOptionsMethod: "getAgents",
+            },
+            default: "",
+            description:
+              'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+          },
+        ],
       },
       {
         displayName: "Form Name",
@@ -473,19 +453,28 @@ export class Nexvio implements INodeType {
         default: "",
       },
       {
-        displayName: "Description",
-        name: "formDescription",
-        type: "string",
-        typeOptions: {
-          rows: 2,
-        },
+        displayName: "Additional Fields",
+        name: "formAdditionalFields",
+        type: "collection",
+        placeholder: "Add Field",
+        default: {},
         displayOptions: {
           show: {
             resource: ["form"],
             operation: ["create"],
           },
         },
-        default: "",
+        options: [
+          {
+            displayName: "Description",
+            name: "formDescription",
+            type: "string",
+            typeOptions: {
+              rows: 2,
+            },
+            default: "",
+          },
+        ],
       },
       {
         displayName: "Form Type",
@@ -608,10 +597,10 @@ export class Nexvio implements INodeType {
     loadOptions: {
       async getAgents(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
         try {
-          const response = (await nexvioHttpRequest(this, {
+          const response = (await nexvioApiRequest(this, {
             method: "GET",
             url: "/api/n8n/agents",
-          })) as NexvioAgentsResponse | { error?: string }
+          }, undefined)) as NexvioAgentsResponse | { error?: string }
 
           if (response && typeof response === "object" && "error" in response && response.error) {
             throw new NodeOperationError(this.getNode(), response.error)
@@ -671,170 +660,218 @@ export class Nexvio implements INodeType {
     const returnData: INodeExecutionData[] = []
 
     for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
-      const resource = this.getNodeParameter("resource", itemIndex) as string
-      const operation = this.getNodeParameter("operation", itemIndex) as string
+      try {
+        const resource = this.getNodeParameter("resource", itemIndex) as string
+        const operation = this.getNodeParameter("operation", itemIndex) as string
 
-      if (resource === "agent" && operation === "sendMessage") {
-        const agentId = this.getNodeParameter("agentId", itemIndex) as string
-        const message = this.getNodeParameter("message", itemIndex) as string
-        const externalConversationId = this.getNodeParameter("externalConversationId", itemIndex) as string
-        const sessionId = this.getNodeParameter("sessionId", itemIndex) as string
-        const forceNewSession = this.getNodeParameter("forceNewSession", itemIndex) as boolean
+        if (resource === "agent" && operation === "sendMessage") {
+          const agentId = this.getNodeParameter("agentId", itemIndex) as string
+          const message = this.getNodeParameter("message", itemIndex) as string
+          const agentAdditional = this.getNodeParameter("agentAdditionalFields", itemIndex, {}) as IDataObject
+          const externalConversationId = agentAdditional.externalConversationId as string | undefined
+          const sessionId = agentAdditional.sessionId as string | undefined
+          const forceNewSession = this.getNodeParameter("forceNewSession", itemIndex) as boolean
 
-        const body: IDataObject = {
-          agent_id: agentId,
-          message,
-          force_new_session: forceNewSession,
-        }
-
-        if (externalConversationId?.trim()) {
-          body.external_conversation_id = externalConversationId.trim()
-        }
-
-        if (sessionId?.trim()) {
-          body.session_id = sessionId.trim()
-        }
-
-        const response = (await nexvioHttpRequest(this, {
-          method: "POST",
-          url: "/api/n8n/conversations/messages",
-          body,
-        })) as NexvioMessageResponse
-
-        returnData.push({
-          json: {
-            ...response,
-            message,
+          const body: IDataObject = {
             agent_id: agentId,
-          },
-          pairedItem: { item: itemIndex },
-        })
-        continue
-      }
+            message,
+            force_new_session: forceNewSession,
+          }
 
-      if (resource === "contact" && operation === "createOrUpdate") {
-        const email = this.getNodeParameter("email", itemIndex) as string
-        const firstName = this.getNodeParameter("firstName", itemIndex) as string
-        const lastName = this.getNodeParameter("lastName", itemIndex) as string
-        const phone = this.getNodeParameter("phone", itemIndex) as string
-        const companyName = this.getNodeParameter("companyName", itemIndex) as string
-        const tags = this.getNodeParameter("tags", itemIndex) as string
+          if (externalConversationId?.trim()) {
+            body.external_conversation_id = externalConversationId.trim()
+          }
 
-        const body: IDataObject = { email }
-        if (firstName?.trim()) body.first_name = firstName.trim()
-        if (lastName?.trim()) body.last_name = lastName.trim()
-        if (phone?.trim()) body.phone = phone.trim()
-        if (companyName?.trim()) body.company_name = companyName.trim()
-        if (tags?.trim()) body.tags = tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+          if (sessionId?.trim()) {
+            body.session_id = sessionId.trim()
+          }
 
-        const response = await nexvioHttpRequest(this, {
-          method: "POST",
-          url: "/api/n8n/contacts",
-          body,
-        })
+          const response = (await nexvioApiRequest(
+            this,
+            {
+              method: "POST",
+              url: "/api/n8n/conversations/messages",
+              body,
+            },
+            itemIndex,
+          )) as NexvioMessageResponse
 
-        returnData.push({
-          json: response as IDataObject,
-          pairedItem: { item: itemIndex },
-        })
-        continue
-      }
-
-      if (resource === "ticket" && operation === "create") {
-        const subject = this.getNodeParameter("subject", itemIndex) as string
-        const description = this.getNodeParameter("description", itemIndex) as string
-        const status = this.getNodeParameter("status", itemIndex) as string
-        const priority = this.getNodeParameter("priority", itemIndex) as string
-        const requesterName = this.getNodeParameter("requesterName", itemIndex) as string
-        const requesterEmail = this.getNodeParameter("requesterEmail", itemIndex) as string
-        const ticketAgentId = this.getNodeParameter("ticketAgentId", itemIndex) as string
-
-        const body: IDataObject = {
-          subject,
-          status,
-          priority,
+          returnData.push({
+            json: {
+              ...response,
+              message,
+              agent_id: agentId,
+            },
+            pairedItem: { item: itemIndex },
+          })
+          continue
         }
 
-        if (description?.trim()) body.description = description.trim()
-        if (requesterName?.trim()) body.requester_name = requesterName.trim()
-        if (requesterEmail?.trim()) body.requester_email = requesterEmail.trim()
-        if (ticketAgentId?.trim()) body.agent_id = ticketAgentId.trim()
+        if (resource === "contact" && operation === "createOrUpdate") {
+          const email = this.getNodeParameter("email", itemIndex) as string
+          if (!isValidEmail(email)) {
+            throw new NodeOperationError(this.getNode(), "Invalid email address", {
+              description: `The email address '${email}' in the 'email' field is not valid`,
+              itemIndex,
+            })
+          }
 
-        const response = await nexvioHttpRequest(this, {
-          method: "POST",
-          url: "/api/n8n/tickets",
-          body,
-        })
+          const contactAdditional = this.getNodeParameter("contactAdditionalFields", itemIndex, {}) as IDataObject
+          const firstName = contactAdditional.firstName as string | undefined
+          const lastName = contactAdditional.lastName as string | undefined
+          const phone = contactAdditional.phone as string | undefined
+          const companyName = contactAdditional.companyName as string | undefined
+          const tags = contactAdditional.tags as string | undefined
 
-        returnData.push({
-          json: response as IDataObject,
-          pairedItem: { item: itemIndex },
-        })
-        continue
-      }
+          const body: IDataObject = { email: email.trim() }
+          if (firstName?.trim()) body.first_name = firstName.trim()
+          if (lastName?.trim()) body.last_name = lastName.trim()
+          if (phone?.trim()) body.phone = phone.trim()
+          if (companyName?.trim()) body.company_name = companyName.trim()
+          if (tags?.trim()) body.tags = tags.split(",").map((tag) => tag.trim()).filter(Boolean)
 
-      if (resource === "form" && operation === "create") {
-        const formName = this.getNodeParameter("formName", itemIndex) as string
-        const formDescription = this.getNodeParameter("formDescription", itemIndex) as string
-        const formType = this.getNodeParameter("formType", itemIndex) as string
-        const rows = readFormFieldRows((name, index) => this.getNodeParameter(name, index), itemIndex, formType)
+          const response = await nexvioApiRequest(
+            this,
+            {
+              method: "POST",
+              url: "/api/n8n/contacts",
+              body,
+            },
+            itemIndex,
+          )
 
-        const fields =
-          rows.length > 0
-            ? (buildFieldsFromBuilder(rows) as unknown as IDataObject[])
-            : (buildDefaultFieldsForFormType(formType) as unknown as IDataObject[])
-
-        const body: IDataObject = {
-          name: formName,
-          form_type: formType,
-          fields,
+          returnData.push({
+            json: response as IDataObject,
+            pairedItem: { item: itemIndex },
+          })
+          continue
         }
 
-        if (formDescription?.trim()) {
-          body.description = formDescription.trim()
+        if (resource === "ticket" && operation === "create") {
+          const subject = this.getNodeParameter("subject", itemIndex) as string
+          const status = this.getNodeParameter("status", itemIndex) as string
+          const priority = this.getNodeParameter("priority", itemIndex) as string
+          const ticketAdditional = this.getNodeParameter("ticketAdditionalFields", itemIndex, {}) as IDataObject
+          const description = ticketAdditional.description as string | undefined
+          const requesterName = ticketAdditional.requesterName as string | undefined
+          const requesterEmail = ticketAdditional.requesterEmail as string | undefined
+          const ticketAgentId = ticketAdditional.ticketAgentId as string | undefined
+
+          const body: IDataObject = {
+            subject,
+            status,
+            priority,
+          }
+
+          if (description?.trim()) body.description = description.trim()
+          if (requesterName?.trim()) body.requester_name = requesterName.trim()
+          if (requesterEmail?.trim()) body.requester_email = requesterEmail.trim()
+          if (ticketAgentId?.trim()) body.agent_id = ticketAgentId.trim()
+
+          const response = await nexvioApiRequest(
+            this,
+            {
+              method: "POST",
+              url: "/api/n8n/tickets",
+              body,
+            },
+            itemIndex,
+          )
+
+          returnData.push({
+            json: response as IDataObject,
+            pairedItem: { item: itemIndex },
+          })
+          continue
         }
 
-        const response = await nexvioHttpRequest(this, {
-          method: "POST",
-          url: "/api/n8n/forms",
-          body,
-        })
+        if (resource === "form" && operation === "create") {
+          const formName = this.getNodeParameter("formName", itemIndex) as string
+          const formType = this.getNodeParameter("formType", itemIndex) as string
+          const formAdditional = this.getNodeParameter("formAdditionalFields", itemIndex, {}) as IDataObject
+          const formDescription = formAdditional.formDescription as string | undefined
+          const rows = readFormFieldRows((name, index) => this.getNodeParameter(name, index), itemIndex, formType)
 
-        returnData.push({
-          json: response as IDataObject,
-          pairedItem: { item: itemIndex },
-        })
-        continue
-      }
+          const fields =
+            rows.length > 0
+              ? (buildFieldsFromBuilder(rows) as unknown as IDataObject[])
+              : (buildDefaultFieldsForFormType(formType) as unknown as IDataObject[])
 
-      if (resource === "form" && operation === "submit") {
-        const formId = this.getNodeParameter("formId", itemIndex) as string
-        const submissionInputMode = this.getNodeParameter("submissionInputMode", itemIndex) as string
+          const body: IDataObject = {
+            name: formName,
+            form_type: formType,
+            fields,
+          }
 
-        let submissionData: IDataObject
+          if (formDescription?.trim()) {
+            body.description = formDescription.trim()
+          }
 
-        if (submissionInputMode === "json") {
-          submissionData = this.getNodeParameter("submissionDataJson", itemIndex) as IDataObject
-        } else {
-          const submissionFields = this.getNodeParameter("submissionFields", itemIndex) as ResourceMapperValue
-          submissionData = (submissionFields?.value ?? {}) as IDataObject
+          const response = await nexvioApiRequest(
+            this,
+            {
+              method: "POST",
+              url: "/api/n8n/forms",
+              body,
+            },
+            itemIndex,
+          )
+
+          returnData.push({
+            json: response as IDataObject,
+            pairedItem: { item: itemIndex },
+          })
+          continue
         }
 
-        const body: IDataObject = {
-          form_id: formId,
-          submission_data: submissionData,
+        if (resource === "form" && operation === "submit") {
+          const formId = this.getNodeParameter("formId", itemIndex) as string
+          const submissionInputMode = this.getNodeParameter("submissionInputMode", itemIndex) as string
+
+          let submissionData: IDataObject
+
+          if (submissionInputMode === "json") {
+            submissionData = this.getNodeParameter("submissionDataJson", itemIndex) as IDataObject
+          } else {
+            const submissionFields = this.getNodeParameter("submissionFields", itemIndex) as ResourceMapperValue
+            submissionData = (submissionFields?.value ?? {}) as IDataObject
+          }
+
+          const body: IDataObject = {
+            form_id: formId,
+            submission_data: submissionData,
+          }
+
+          const response = await nexvioApiRequest(
+            this,
+            {
+              method: "POST",
+              url: "/api/n8n/forms/submissions",
+              body,
+            },
+            itemIndex,
+          )
+
+          returnData.push({
+            json: response as IDataObject,
+            pairedItem: { item: itemIndex },
+          })
+        }
+      } catch (error) {
+        if (this.continueOnFail()) {
+          const message = error instanceof Error ? error.message : formatNexvioRequestError(error)
+          returnData.push({
+            json: { error: message },
+            pairedItem: { item: itemIndex },
+          })
+          continue
         }
 
-        const response = await nexvioHttpRequest(this, {
-          method: "POST",
-          url: "/api/n8n/forms/submissions",
-          body,
-        })
+        if (error instanceof NodeOperationError) {
+          throw error
+        }
 
-        returnData.push({
-          json: response as IDataObject,
-          pairedItem: { item: itemIndex },
-        })
+        throw error
       }
     }
 

@@ -1,79 +1,116 @@
 # n8n-nodes-nexvio
 
-Community n8n node for [Nexvio](https://nexvio.ai) agents, contacts, tickets, forms, and automation triggers.
+Community n8n node for [Nexvio](https://nexvio.ai) — AI agents, contacts, tickets, forms, and automation triggers.
 
-Full setup guide: [Nexvio n8n integration](https://docs.nexvio.ai/developer-guides/n8n-integration)
+**Integration guide:** [nexvio.ai/integrations/n8n](https://www.nexvio.ai/integrations/n8n)
 
 ## Installation
 
-> **Not on npm yet.** Clone this repo and use `npm run dev`, or install from the Nexvio monorepo submodule at `apps-vendor/n8n-nodes-nexvio`.
+### n8n Community Nodes (recommended)
 
-When published, install from n8n → **Settings → Community Nodes** → `n8n-nodes-nexvio`.
+In n8n go to **Settings → Community Nodes** and install:
 
-## Setup (development)
+```
+n8n-nodes-nexvio
+```
 
-1. Install dependencies: `npm ci`
-2. Build: `npm run build`
-3. Optional: copy `.env.example` → `.env` and set `NEXVIO_OAUTH_CLIENT_ID` for local OAuth dev
-4. Local dev with n8n: `npm run dev`
+### Local development
 
-Requires Node **≥ 22.22** (see `.nvmrc`).
+```bash
+npm ci
+npm run build
+npm run dev
+```
+
+Requires Node **≥ 22.22**. Optional `.env` overrides: `NEXVIO_OAUTH_CLIENT_ID`, `N8N_PORT` (default `5680`).
 
 ## Credentials
 
 ### Nexvio OAuth2 API (recommended)
 
-- **Dashboard URL** — default `https://app.nexvio.ai` (change for self-hosted dashboard)
-- **Client ID** — built into the node; must match `N8N_CLIENT_ID` on the Nexvio dashboard
-- PKCE is used; no client secret in the node (set `N8N_CLIENT_SECRET` on the dashboard if needed)
+1. Add a **Nexvio OAuth2 API** credential in n8n.
+2. Set **Dashboard URL** (default `https://app.nexvio.ai`).
+3. Click **Connect my account** and approve access.
+4. Your Nexvio operator must allowlist the n8n redirect URL (`N8N_OAUTH_REDIRECT_ALLOWLIST` on the dashboard), or use n8n Cloud (`*.app.n8n.cloud`).
 
 ### Nexvio API (API key)
 
-- **Dashboard URL** — e.g. `https://app.nexvio.ai`
-- **API Key** — team API key (`nex_...`)
-
-Credential test calls `GET /api/n8n/me`.
+1. Add a **Nexvio API** credential.
+2. Set **Dashboard URL** and your team API key (`nex_...`).
+3. Use **Test** to verify against `GET /api/n8n/me`.
 
 ## Nodes
 
-### Nexvio (Action)
+### Nexvio (actions)
 
-| Resource | Operation | API |
-|----------|-----------|-----|
-| Agent | Send Message | `POST /api/n8n/conversations/messages` |
-| Contact | Create or Update | `POST /api/n8n/contacts` |
-| Ticket | Create | `POST /api/n8n/tickets` |
-| Form | Create | `POST /api/n8n/forms` |
-| Form | Submit | `POST /api/n8n/forms/submissions` |
+| Resource | Operation | Required fields | Optional fields |
+|----------|-----------|-----------------|-----------------|
+| Agent | Send Message | Agent, Message | External Conversation ID, Session ID, Start New Session |
+| Contact | Create or Update | Email | First Name, Last Name, Phone, Company, Tags |
+| Ticket | Create | Subject | Status, Priority, Description, Requester, Agent |
+| Form | Create | Form Name, Form Type, Form Fields | Description |
+| Form | Submit | Form, Field Values or JSON | — |
 
-**Form → Create** — pick a form type; each type has its own editable field list (Label, Type, Placeholder, Required).
-
-**Form → Submit** — select a form, then map values in **Field Values** (loads fields from the API) or use JSON mode.
-
-**Send Message** — pass a stable **External Conversation ID** so Nexvio reuses the same chat session.
+Use a stable **External Conversation ID** on agent messages to keep chat sessions across workflow runs.
 
 ### Nexvio Trigger
 
-| Event | When it fires |
-|-------|----------------|
+| Trigger On | When it fires |
+|------------|----------------|
 | New Contact | `contacts.created` |
 | New Ticket | `tickets.created` |
 | New Form Created | `forms.created` |
-| New Form Submission | `forms.submission.created` |
+| New Form Submission | `forms.submission.created` (requires Form) |
+
+Webhook payloads use the Nexvio event envelope:
+
+```json
+{
+  "eventId": "uuid",
+  "eventType": "contacts.created",
+  "occurredAt": "2026-01-01T00:00:00.000Z",
+  "teamId": "team_uuid",
+  "agentId": null,
+  "source": "dashboard",
+  "version": "2026-01-01",
+  "payload": { }
+}
+```
+
+Trigger output also includes `_webhookHeaders` with `x-nexvio-event-id`, `x-nexvio-signature`, and related delivery headers.
+
+## Example workflows
+
+### Send a message to an AI agent
+
+1. Add **Nexvio** → Resource **Agent** → **Send Message**.
+2. Select an agent and enter the user message.
+3. Set **External Conversation ID** (e.g. `telegram:12345`) under **Additional Fields** for session continuity.
+4. Use `$json.reply` in the next node.
+
+### Create a contact from a form webhook
+
+1. **Nexvio Trigger** → **Trigger On: New Form Submission**.
+2. **Nexvio** → **Contact / Create or Update** with `$json.payload.submission_data.email`.
+
+### Ticket on new contact
+
+1. **Nexvio Trigger** → **Trigger On: New Contact**.
+2. **Nexvio** → **Ticket / Create** with subject from `$json.payload.first_name`.
 
 ## Scripts
 
 | Script | Description |
 |--------|-------------|
 | `npm run dev` | Start n8n with this node loaded |
-| `npm run build` | Compile TypeScript to `dist/` |
-| `npm run lint` | Lint the package |
+| `npm run build` | Compile to `dist/` |
+| `npm run lint` | Lint with n8n community rules |
+| `npm test` | Run unit tests |
+| `npm run release` | Version bump and publish prep (n8n-node) |
 
 ## Repository
 
-Standalone repo: [github.com/NexvioAI/n8n-nodes-nexvio](https://github.com/NexvioAI/n8n-nodes-nexvio)
-
-Also vendored as a git submodule in the [Nexvio monorepo](https://github.com/NexvioAI/nexvio-widget) at `apps-vendor/n8n-nodes-nexvio`.
+- [github.com/NexvioAI/n8n-nodes-nexvio](https://github.com/NexvioAI/n8n-nodes-nexvio)
 
 ## License
 

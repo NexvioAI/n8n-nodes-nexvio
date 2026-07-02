@@ -10,21 +10,32 @@
   ],
   "license": "MIT",
   "homepage": "https://nexvio.ai",
-  "author": { "name": "Nexvio", "email": "support@nexvio.ai" },
+  "author": {
+    "name": "Nexvio",
+    "email": "support@nexvio.ai"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/NexvioAI/n8n-nodes-nexvio.git"
   },
   "main": "index.js",
-  "engines": { "node": ">=22.22" },
+  "engines": {
+    "node": ">=22.22"
+  },
   "scripts": {
     "build": "n8n-node build",
     "predev": "n8n-node build",
     "dev": "node scripts/dev.mjs",
     "lint": "n8n-node lint",
-    "lint:fix": "n8n-node lint --fix"
+    "lint:fix": "n8n-node lint --fix",
+    "pretest": "npm run build",
+    "test": "node --test ../n8n-nodes-nexvio-tests/**/*.test.ts",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "n8n": {
     "n8nNodesApiVersion": 1,
     "strict": true,
@@ -43,5 +54,7 @@
     "n8n-workflow": "^1.82.0",
     "typescript": "^5.7.2"
   },
-  "peerDependencies": { "n8n-workflow": "*" }
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }

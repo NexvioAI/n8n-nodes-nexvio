@@ -25,6 +25,27 @@ export async function fetchNexvioFormById(
   context: ILoadOptionsFunctions,
   formId: string,
 ): Promise<NexvioForm | undefined> {
-  const forms = await fetchNexvioForms(context)
-  return forms.find((form) => form.id === formId)
+  const trimmedId = formId.trim()
+  if (!trimmedId) {
+    return undefined
+  }
+
+  try {
+    const response = (await nexvioHttpRequest(context, {
+      method: "GET",
+      url: `/api/n8n/forms/${encodeURIComponent(trimmedId)}`,
+    })) as NexvioForm | { error?: string }
+
+    if (response && typeof response === "object" && "error" in response && response.error) {
+      throw new NodeOperationError(context.getNode(), response.error)
+    }
+
+    if (response && typeof response === "object" && "id" in response) {
+      return response as NexvioForm
+    }
+
+    return undefined
+  } catch (error) {
+    throw new NodeOperationError(context.getNode(), formatNexvioRequestError(error))
+  }
 }

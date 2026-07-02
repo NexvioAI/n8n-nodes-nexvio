@@ -1,4 +1,4 @@
-import type { ICredentialType, INodeProperties } from "n8n-workflow"
+import type { ICredentialTestRequest, ICredentialType, INodeProperties } from "n8n-workflow"
 import { NEXVIO_OAUTH_SCOPES } from "../shared/constants"
 import {
   nexvioOAuthAuthUrlField,
@@ -22,7 +22,7 @@ export class NexvioOAuth2Api implements ICredentialType {
   properties: INodeProperties[] = [
     {
       displayName:
-        "Click **Connect my account** to sign in with Nexvio. PKCE is used — no client secret. The OAuth redirect URL shown below is accepted automatically by Nexvio.",
+        "Click **Connect my account** to sign in with Nexvio. PKCE is used — no client secret. Ask your Nexvio operator to add the OAuth redirect URL shown below to N8N_OAUTH_REDIRECT_ALLOWLIST before connecting.",
       name: "connectNotice",
       type: "notice",
       default: "",
@@ -70,4 +70,11 @@ export class NexvioOAuth2Api implements ICredentialType {
       default: "body",
     },
   ]
+
+  test: ICredentialTestRequest = {
+    request: {
+      baseURL: '={{$credentials.dashboardUrl.replace(/\\/+$/, "")}}',
+      url: "/api/n8n/me",
+    },
+  }
 }
