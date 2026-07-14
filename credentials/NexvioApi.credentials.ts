@@ -4,8 +4,8 @@ import type {
   ICredentialType,
   INodeProperties,
 } from "n8n-workflow"
-import { nexvioDashboardUrlField } from "../shared/credential-fields"
 import { nexvioCredentialIcon } from "../shared/nexvio-icon"
+import { NEXVIO_DASHBOARD_BASE_URL } from "../shared/oauth-config"
 
 export class NexvioApi implements ICredentialType {
   name = "nexvioApi"
@@ -17,7 +17,6 @@ export class NexvioApi implements ICredentialType {
   documentationUrl = "https://www.nexvio.ai/integrations/n8n"
 
   properties: INodeProperties[] = [
-    nexvioDashboardUrlField,
     {
       displayName: "API Key",
       name: "apiKey",
@@ -41,7 +40,7 @@ export class NexvioApi implements ICredentialType {
 
   test: ICredentialTestRequest = {
     request: {
-      baseURL: '={{$credentials.dashboardUrl.replace(/\\/+$/, "")}}',
+      baseURL: NEXVIO_DASHBOARD_BASE_URL,
       url: "/api/n8n/me",
     },
   }

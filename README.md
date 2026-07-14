@@ -22,6 +22,8 @@ npm run build
 npm run dev
 ```
 
+Set the dashboard base URL in `shared/oauth-config.ts` for the environment you are testing.
+
 Requires Node **≥ 22.22**. Optional `.env` overrides: `NEXVIO_OAUTH_CLIENT_ID`, `N8N_PORT` (default `5680`).
 
 ## Credentials
@@ -29,15 +31,18 @@ Requires Node **≥ 22.22**. Optional `.env` overrides: `NEXVIO_OAUTH_CLIENT_ID`
 ### Nexvio OAuth2 API (recommended)
 
 1. Add a **Nexvio OAuth2 API** credential in n8n.
-2. Set **Dashboard URL** (default `https://app.nexvio.ai`).
-3. Click **Connect my account** and approve access.
-4. Your Nexvio operator must allowlist the n8n redirect URL (`N8N_OAUTH_REDIRECT_ALLOWLIST` on the dashboard), or use n8n Cloud (`*.app.n8n.cloud`).
+2. Click **Connect my account** and approve access.
+3. Your Nexvio operator must allowlist the n8n redirect URL (`N8N_OAUTH_REDIRECT_ALLOWLIST` on the dashboard), or use n8n Cloud (`*.app.n8n.cloud`).
+
+OAuth endpoints use `NEXVIO_DEFAULT_DASHBOARD_URL` from `shared/oauth-config.ts`; there is no Dashboard URL field in the n8n credential.
 
 ### Nexvio API (API key)
 
 1. Add a **Nexvio API** credential.
-2. Set **Dashboard URL** and your team API key (`nex_...`).
+2. Enter your team API key (`nex_...`).
 3. Use **Test** to verify against `GET /api/n8n/me`.
+
+API-key verification also uses `NEXVIO_DEFAULT_DASHBOARD_URL` from `shared/oauth-config.ts`.
 
 ## Nodes
 
@@ -106,7 +111,26 @@ Trigger output also includes `_webhookHeaders` with `x-nexvio-event-id`, `x-nexv
 | `npm run build` | Compile to `dist/` |
 | `npm run lint` | Lint with n8n community rules |
 | `npm test` | Run unit tests |
-| `npm run release` | Version bump and publish prep (n8n-node) |
+| `npm run release` | Bump version, tag locally, and publish from GitHub Actions |
+
+## Publishing
+
+n8n Creator Portal verification requires npm packages to be published from GitHub Actions with provenance.
+
+One-time npm setup:
+
+1. Open the package settings on npm.
+2. Add a Trusted Publisher for repository `NexvioAI/n8n-nodes-nexvio`.
+3. Use workflow filename `publish.yml`.
+
+Release flow:
+
+1. Run `npm run release` locally.
+2. Push the generated tag.
+3. GitHub Actions runs `.github/workflows/publish.yml`, builds the package, and publishes to npm with provenance.
+4. Submit the npm package in the n8n Creator Portal for verification.
+
+Do not republish `0.1.0`; npm versions are immutable. Publish the next version to replace the broken npm tarball that was created without `dist`.
 
 ## Repository
 

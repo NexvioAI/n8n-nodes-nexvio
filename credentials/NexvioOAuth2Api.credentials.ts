@@ -1,10 +1,6 @@
 import type { ICredentialTestRequest, ICredentialType, INodeProperties } from "n8n-workflow"
 import { NEXVIO_OAUTH_SCOPES } from "../shared/constants"
-import {
-  nexvioOAuthAuthUrlField,
-  nexvioOAuthDashboardUrlField,
-  nexvioOAuthTokenUrlField,
-} from "../shared/credential-fields"
+import { nexvioOAuthAuthUrlField, nexvioOAuthTokenUrlField } from "../shared/credential-fields"
 import { NEXVIO_OAUTH_CLIENT_ID } from "../shared/oauth-config"
 import { nexvioCredentialIcon } from "../shared/nexvio-icon"
 
@@ -27,7 +23,6 @@ export class NexvioOAuth2Api implements ICredentialType {
       type: "notice",
       default: "",
     },
-    nexvioOAuthDashboardUrlField,
     {
       displayName: "Client ID",
       name: "clientId",

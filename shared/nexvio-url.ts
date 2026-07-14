@@ -1,41 +1,16 @@
 import type { IExecuteFunctions, IHookFunctions, ILoadOptionsFunctions } from "n8n-workflow"
-import { NEXVIO_DEFAULT_DASHBOARD_URL } from "./constants"
-import { assertNexvioCredentialSelected, getNexvioCredentialName, type NexvioCredentialName } from "./nexvio-auth"
+import { NEXVIO_DASHBOARD_BASE_URL } from "./constants"
+import { assertNexvioCredentialSelected, type NexvioCredentialName } from "./nexvio-auth"
 
 type NexvioCredentialContext = IExecuteFunctions | IHookFunctions | ILoadOptionsFunctions
-
-export function normalizeNexvioBaseUrl(value: string): string {
-  return value.trim().replace(/\/+$/, "")
-}
-
-async function readDashboardUrl(
-  ctx: NexvioCredentialContext,
-  credentialName: NexvioCredentialName,
-): Promise<string> {
-  const credentials = await ctx.getCredentials(credentialName)
-  const dashboardUrl =
-    typeof credentials.dashboardUrl === "string" ? credentials.dashboardUrl.trim() : ""
-
-  if (!dashboardUrl) {
-    return NEXVIO_DEFAULT_DASHBOARD_URL
-  }
-
-  return normalizeNexvioBaseUrl(dashboardUrl)
-}
-
-export async function getNexvioBaseUrl(ctx: NexvioCredentialContext): Promise<string> {
-  const credentialName = getNexvioCredentialName(ctx)
-  return readDashboardUrl(ctx, credentialName)
-}
 
 export async function getNexvioRequestContext(ctx: NexvioCredentialContext): Promise<{
   credentialName: NexvioCredentialName
   baseUrl: string
 }> {
   const credentialName = assertNexvioCredentialSelected(ctx)
-  const baseUrl = await readDashboardUrl(ctx, credentialName)
 
-  return { credentialName, baseUrl }
+  return { credentialName, baseUrl: NEXVIO_DASHBOARD_BASE_URL }
 }
 
 export function formatNexvioRequestError(error: unknown): string {

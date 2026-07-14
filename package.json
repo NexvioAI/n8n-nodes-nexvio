@@ -16,7 +16,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/NexvioAI/n8n-nodes-nexvio.git"
+    "url": "git+https://github.com/NexvioAI/n8n-nodes-nexvio.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "main": "index.js",
   "engines": {
@@ -24,6 +28,7 @@
   },
   "scripts": {
     "build": "n8n-node build",
+    "build:watch": "tsc --watch",
     "predev": "n8n-node build",
     "dev": "node scripts/dev.mjs",
     "lint": "n8n-node lint",
@@ -52,6 +57,7 @@
     "@n8n/node-cli": "^0.23.0",
     "eslint": "9.29.0",
     "n8n-workflow": "^1.82.0",
+    "release-it": "20.2.0",
     "typescript": "^5.7.2"
   },
   "peerDependencies": {
