@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-nexvio",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "n8n community node for Nexvio AI agents, conversations, contacts, and tickets",
   "keywords": [
     "n8n-community-node-package",
