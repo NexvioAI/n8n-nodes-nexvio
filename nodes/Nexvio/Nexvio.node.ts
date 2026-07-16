@@ -134,7 +134,7 @@ export class Nexvio implements INodeType {
             name: "Send Message",
             value: "sendMessage",
             description: "Send a message to the selected agent and get the AI reply",
-            action: 'Send message to a nexvio agent',
+            action: "Send a message to a nexvio agent",
           },
         ],
         default: "sendMessage",

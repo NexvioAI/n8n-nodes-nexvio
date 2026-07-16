@@ -1,7 +1,7 @@
 import type { ICredentialTestRequest, ICredentialType, INodeProperties } from "n8n-workflow"
 import { NEXVIO_OAUTH_SCOPES } from "../shared/constants"
 import { nexvioOAuthAuthUrlField, nexvioOAuthTokenUrlField } from "../shared/credential-fields"
-import { NEXVIO_OAUTH_CLIENT_ID } from "../shared/oauth-config"
+import { NEXVIO_DASHBOARD_BASE_URL, NEXVIO_OAUTH_CLIENT_ID } from "../shared/oauth-config"
 import { nexvioCredentialIcon } from "../shared/nexvio-icon"
 
 export class NexvioOAuth2Api implements ICredentialType {
@@ -68,7 +68,7 @@ export class NexvioOAuth2Api implements ICredentialType {
 
   test: ICredentialTestRequest = {
     request: {
-      baseURL: '={{$credentials.dashboardUrl.replace(/\\/+$/, "")}}',
+      baseURL: NEXVIO_DASHBOARD_BASE_URL,
       url: "/api/n8n/me",
     },
   }

@@ -22,9 +22,11 @@ npm run build
 npm run dev
 ```
 
-Set the dashboard base URL in `shared/oauth-config.ts` for the environment you are testing.
-
 Requires Node **≥ 22.22**. Optional `.env` overrides: `NEXVIO_OAUTH_CLIENT_ID`, `N8N_PORT` (default `5680`).
+
+```bash
+npm test
+```
 
 ## Credentials
 
@@ -34,15 +36,13 @@ Requires Node **≥ 22.22**. Optional `.env` overrides: `NEXVIO_OAUTH_CLIENT_ID`
 2. Click **Connect my account** and approve access.
 3. Your Nexvio operator must allowlist the n8n redirect URL (`N8N_OAUTH_REDIRECT_ALLOWLIST` on the dashboard), or use n8n Cloud (`*.app.n8n.cloud`).
 
-OAuth endpoints use `NEXVIO_DEFAULT_DASHBOARD_URL` from `shared/oauth-config.ts`; there is no Dashboard URL field in the n8n credential.
+OAuth and API calls use `https://app.nexvio.ai` from `shared/oauth-config.ts` (no Dashboard URL field in the credential UI).
 
 ### Nexvio API (API key)
 
 1. Add a **Nexvio API** credential.
 2. Enter your team API key (`nex_...`).
 3. Use **Test** to verify against `GET /api/n8n/me`.
-
-API-key verification also uses `NEXVIO_DEFAULT_DASHBOARD_URL` from `shared/oauth-config.ts`.
 
 ## Nodes
 

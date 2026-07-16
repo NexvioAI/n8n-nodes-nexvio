@@ -14,6 +14,7 @@ import { nexvioApiRequest } from "../../shared/nexvio-errors"
 import { fetchNexvioForms } from "../../shared/nexvio-forms-api"
 import { formatNexvioRequestError } from "../../shared/nexvio-url"
 import { nexvioIcon } from "../../shared/nexvio-icon"
+import { buildNexvioTriggerItem } from "../../shared/nexvio-trigger-payload"
 
 type HookCreateResponse = {
   id: string
@@ -254,30 +255,9 @@ export class NexvioTrigger implements INodeType {
   async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
     const bodyData = this.getBodyData() as IDataObject
     const headers = this.getHeaderData() as IDataObject
-    const headerEventId = headers["x-nexvio-event-id"]
-    const eventId =
-      typeof headerEventId === "string" && headerEventId.trim()
-        ? headerEventId
-        : typeof bodyData.eventId === "string"
-          ? bodyData.eventId
-          : undefined
 
     return {
-      workflowData: [
-        this.helpers.returnJsonArray([
-          {
-            ...bodyData,
-            ...(eventId ? { eventId } : {}),
-            _webhookHeaders: {
-              "x-nexvio-signature": headers["x-nexvio-signature"],
-              "x-nexvio-timestamp": headers["x-nexvio-timestamp"],
-              "x-nexvio-event-id": headers["x-nexvio-event-id"],
-              "x-nexvio-event-type": headers["x-nexvio-event-type"],
-              "x-nexvio-delivery-attempt": headers["x-nexvio-delivery-attempt"],
-            },
-          },
-        ]),
-      ],
+      workflowData: [this.helpers.returnJsonArray([buildNexvioTriggerItem(bodyData, headers)])],
     }
   }
 }

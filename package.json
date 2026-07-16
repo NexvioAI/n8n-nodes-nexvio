@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-nexvio",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "n8n community node for Nexvio AI agents, conversations, contacts, and tickets",
   "keywords": [
     "n8n-community-node-package",
@@ -33,8 +33,7 @@
     "dev": "node scripts/dev.mjs",
     "lint": "n8n-node lint",
     "lint:fix": "n8n-node lint --fix",
-    "pretest": "npm run build",
-    "test": "node --test ../n8n-nodes-nexvio-tests/**/*.test.ts",
+    "test": "tsx --test tests/**/*.test.ts",
     "release": "n8n-node release",
     "prepublishOnly": "n8n-node prerelease"
   },
@@ -58,6 +57,7 @@
     "eslint": "9.29.0",
     "n8n-workflow": "^1.82.0",
     "release-it": "20.2.0",
+    "tsx": "^4.20.3",
     "typescript": "^5.7.2"
   },
   "peerDependencies": {

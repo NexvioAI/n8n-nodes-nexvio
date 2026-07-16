@@ -4,6 +4,10 @@ import { assertNexvioCredentialSelected, type NexvioCredentialName } from "./nex
 
 type NexvioCredentialContext = IExecuteFunctions | IHookFunctions | ILoadOptionsFunctions
 
+export function normalizeNexvioBaseUrl(value: string): string {
+  return value.trim().replace(/\/+$/, "")
+}
+
 export async function getNexvioRequestContext(ctx: NexvioCredentialContext): Promise<{
   credentialName: NexvioCredentialName
   baseUrl: string
