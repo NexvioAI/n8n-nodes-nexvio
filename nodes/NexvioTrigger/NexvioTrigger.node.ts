@@ -79,12 +79,12 @@ export class NexvioTrigger implements INodeType {
         type: "options",
         options: [
           {
-            name: "OAuth2 (Recommended)",
-            value: "oAuth2",
-          },
-          {
             name: "API Key",
             value: "apiKey",
+          },
+          {
+            name: "OAuth2 (Recommended)",
+            value: "oAuth2",
           },
         ],
         default: "oAuth2",
@@ -100,11 +100,6 @@ export class NexvioTrigger implements INodeType {
             description: "Triggers when a new contact is created",
           },
           {
-            name: "New Ticket",
-            value: "tickets.created",
-            description: "Triggers when a new ticket is created",
-          },
-          {
             name: "New Form Created",
             value: "forms.created",
             description: "Triggers when a new form is created",
@@ -113,6 +108,11 @@ export class NexvioTrigger implements INodeType {
             name: "New Form Submission",
             value: "forms.submission.created",
             description: "Triggers when the selected form is submitted",
+          },
+          {
+            name: "New Ticket",
+            value: "tickets.created",
+            description: "Triggers when a new ticket is created",
           },
         ],
         default: "contacts.created",
@@ -146,6 +146,7 @@ export class NexvioTrigger implements INodeType {
 
           return forms
             .filter((form) => form.is_enabled !== false)
+            .sort((left, right) => left.name.localeCompare(right.name))
             .map((form) => ({
               name: form.name,
               value: form.id,
@@ -216,7 +217,7 @@ export class NexvioTrigger implements INodeType {
           return true
         } catch (error) {
           delete webhookData.webhookId
-          throw error
+          throw new NodeApiError(this.getNode(), error as JsonObject)
         }
       },
       async delete(this: IHookFunctions): Promise<boolean> {

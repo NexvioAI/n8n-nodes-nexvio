@@ -8,8 +8,9 @@ import type {
   INodeTypeDescription,
   ResourceMapperFields,
   ResourceMapperValue,
+  JsonObject,
 } from "n8n-workflow"
-import { NodeConnectionTypes, NodeOperationError } from "n8n-workflow"
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from "n8n-workflow"
 import {
   buildDefaultFieldsForFormType,
   buildFieldsFromBuilder,
@@ -84,12 +85,12 @@ export class Nexvio implements INodeType {
         type: "options",
         options: [
           {
-            name: "OAuth2 (Recommended)",
-            value: "oAuth2",
-          },
-          {
             name: "API Key",
             value: "apiKey",
+          },
+          {
+            name: "OAuth2 (Recommended)",
+            value: "oAuth2",
           },
         ],
         default: "oAuth2",
@@ -109,12 +110,12 @@ export class Nexvio implements INodeType {
             value: "contact",
           },
           {
-            name: "Ticket",
-            value: "ticket",
-          },
-          {
             name: "Form",
             value: "form",
+          },
+          {
+            name: "Ticket",
+            value: "ticket",
           },
         ],
         default: "agent",
@@ -361,10 +362,10 @@ export class Nexvio implements INodeType {
         name: "status",
         type: "options",
         options: [
+          { name: "Closed", value: "closed" },
           { name: "Open", value: "open" },
           { name: "Pending", value: "pending" },
           { name: "Resolved", value: "resolved" },
-          { name: "Closed", value: "closed" },
         ],
         displayOptions: {
           show: {
@@ -379,9 +380,9 @@ export class Nexvio implements INodeType {
         name: "priority",
         type: "options",
         options: [
+          { name: "High", value: "high" },
           { name: "Low", value: "low" },
           { name: "Medium", value: "medium" },
-          { name: "High", value: "high" },
           { name: "Urgent", value: "urgent" },
         ],
         displayOptions: {
@@ -406,27 +407,6 @@ export class Nexvio implements INodeType {
         },
         options: [
           {
-            displayName: "Description",
-            name: "description",
-            type: "string",
-            typeOptions: {
-              rows: 4,
-            },
-            default: "",
-          },
-          {
-            displayName: "Requester Name",
-            name: "requesterName",
-            type: "string",
-            default: "",
-          },
-          {
-            displayName: "Requester Email",
-            name: "requesterEmail",
-            type: "string",
-            default: "",
-          },
-          {
             displayName: "Agent Name or ID",
             name: "ticketAgentId",
             type: "options",
@@ -436,6 +416,27 @@ export class Nexvio implements INodeType {
             default: "",
             description:
               'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+          },
+          {
+            displayName: "Description",
+            name: "description",
+            type: "string",
+            typeOptions: {
+              rows: 4,
+            },
+            default: "",
+          },
+          {
+            displayName: "Requester Email",
+            name: "requesterEmail",
+            type: "string",
+            default: "",
+          },
+          {
+            displayName: "Requester Name",
+            name: "requesterName",
+            type: "string",
+            default: "",
           },
         ],
       },
@@ -610,6 +611,7 @@ export class Nexvio implements INodeType {
 
           return agents
             .filter((agent) => agent.is_enabled !== false)
+            .sort((left, right) => left.name.localeCompare(right.name))
             .map((agent) => ({
               name: agent.name,
               value: agent.id,
@@ -623,6 +625,7 @@ export class Nexvio implements INodeType {
 
         return forms
           .filter((form) => form.is_enabled !== false)
+          .sort((left, right) => left.name.localeCompare(right.name))
           .map((form) => ({
             name: form.name,
             value: form.id,
@@ -871,7 +874,10 @@ export class Nexvio implements INodeType {
           throw error
         }
 
-        throw error
+        throw new NodeApiError(this.getNode(), error as JsonObject, {
+          message: formatNexvioRequestError(error),
+          itemIndex,
+        })
       }
     }
 

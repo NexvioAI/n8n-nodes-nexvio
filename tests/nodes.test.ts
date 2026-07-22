@@ -29,7 +29,7 @@ describe("Nexvio node metadata", () => {
     const resource = node.description.properties.find((property) => property.name === "resource")
     const values = (resource?.options ?? []).map((option) => ("value" in option ? option.value : null))
 
-    assert.deepEqual(values, ["agent", "contact", "ticket", "form"])
+    assert.deepEqual(values, ["agent", "contact", "form", "ticket"])
   })
 })
 
@@ -41,9 +41,9 @@ describe("Nexvio Trigger metadata", () => {
 
     assert.deepEqual(values, [
       "contacts.created",
-      "tickets.created",
       "forms.created",
       "forms.submission.created",
+      "tickets.created",
     ])
   })
 })
