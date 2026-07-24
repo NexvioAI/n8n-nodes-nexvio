@@ -870,10 +870,6 @@ export class Nexvio implements INodeType {
           continue
         }
 
-        if (error instanceof NodeOperationError) {
-          throw error
-        }
-
         throw new NodeApiError(this.getNode(), error as JsonObject, {
           message: formatNexvioRequestError(error),
           itemIndex,
