@@ -51,7 +51,7 @@ export class Nexvio implements INodeType {
     group: ["output"],
     version: 1,
     subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-    description: "Send messages to Nexvio agents, manage contacts, tickets, and forms",
+    description: "Send messages to Nexvio AI agents and manage contacts, tickets, and forms",
     defaults: {
       name: "Nexvio",
     },
@@ -134,7 +134,7 @@ export class Nexvio implements INodeType {
           {
             name: "Send Message",
             value: "sendMessage",
-            description: "Send a message to the selected agent and get the AI reply",
+            description: "Send a message to a pre-configured Nexvio AI agent and get its reply. The agent's AI model, memory, knowledge base, and context are all managed in Nexvio — no AI setup required in n8n.",
             action: "Send a message to a nexvio agent",
           },
         ],
